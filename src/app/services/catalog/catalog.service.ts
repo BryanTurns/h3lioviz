@@ -84,7 +84,7 @@ export class CatalogService {
 
     private _getResolution( codeString: string ) {
         if (!codeString) {
-            return undefined;
+            return;
         }
 
         const resolution = codeString.includes('low') ?

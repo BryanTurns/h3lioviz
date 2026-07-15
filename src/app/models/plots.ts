@@ -195,19 +195,15 @@ export const imageDatasetCatalog: { [parameter: string]: IDatasetStrict } = Obje
 export const modelDatasetCatalog: { [parameter: string]: IDatasetStrict } =
     [ 'stereoa', 'earth', 'stereob' ].reduce( ( aggregator, satellite: string) => {
         const urlBase: string = environment.production ? environment.aws.api : localUrls.evolutionData;
-        // const urlSuffix: string = environment.production ? `getTimeSeries/${this.runId}/${satellite}.jsond` : `evo.${satellite}.json`;
         const newDataset: IDatasetStrict = {
-        // TODO will need to add the suffix when called from the catalog later
-            url: urlBase, // + urlSuffix,
+            url: urlBase,
             name: 'Model data ' + SATELLITE_NAMES[satellite],
+            // for Enlil, we do not plot mag variables Bx, By, Bz
             rangeVariables: [
                 { name: 'density', displayName: 'Density' },
                 { name: 'velocity', displayName: 'Radial Velocity' },
                 { name: 'temperature', displayName: 'Temperature' },
-                { name: 'pressure', displayName: 'Pressure' },
-                { name: 'bx', displayName: 'Bx' },
-                { name: 'by', displayName: 'By' },
-                { name: 'bz', displayName: 'Bz' }
+                { name: 'pressure', displayName: 'Pressure' }
             ],
             domainVariables: [ 'time' ]
         };
@@ -216,16 +212,7 @@ export const modelDatasetCatalog: { [parameter: string]: IDatasetStrict } =
     }, {});
 
 export const observedDatasetCatalog: { [parameter: string]: IDatasetStrict } = {
-    ace_mag_1m: {
-        url: environment.latisUrl + 'ace_mag_1m.jsond?',
-        name: 'ACE Archived Real Time Data',
-        rangeVariables: [
-            { name: 'Bx', displayName: 'Bx' },
-            { name: 'By', displayName: 'By' },
-            { name: 'Bz', displayName: 'Bz' }
-        ],
-        domainVariables: [ 'time' ]
-    },
+    // for Enlil, we do not plot mag variables Bx, By, Bz
     ace_swepam_1m: {
         url: environment.latisUrl + 'ace_swepam_1m.jsond?',
         name: 'Archived real time ACE data',

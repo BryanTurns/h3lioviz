@@ -36,7 +36,7 @@ export const DEFAULT_PLOT_OPTIONS: IMenuOptions  = {
             high: null
         },
         scaling: 'linear',
-        useMultipleAxes: false
+        useMultipleAxes: true
     }
 };
 

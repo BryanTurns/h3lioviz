@@ -196,7 +196,7 @@ export class PlotsComponent implements OnChanges {
                 uid: satellite,
                 url: urlBase + urlSuffix,
                 name: catalogDataset.name,
-                rangeVariables: selectedVariables,
+                rangeVariables: catalogDataset.rangeVariables,
                 selectedRangeVariables: selectedVariables,
                 domainVariables: catalogDataset.domainVariables
             };

@@ -183,6 +183,7 @@ export class PlotsComponent implements OnChanges {
     }
 
     createModelDataset( variables: string[] )  {
+        // Only plot earth for now, but could be extended to other satellites in the future
         const satellite = 'earth';
         const catalogDataset = modelDatasetCatalog[satellite];
         const urlBase: string = environment.production ? environment.aws.api : localUrls.evolutionData;

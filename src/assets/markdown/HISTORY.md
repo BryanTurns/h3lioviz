@@ -1,4 +1,9 @@
 ### Changed
+- Colorbar legend defaults to on
+
+## 2026-02-05 v2.3.3
+
+### Changed
 - Updated to Angular 20 and new logo
 
 ## 2026-01-14 v2.3.2

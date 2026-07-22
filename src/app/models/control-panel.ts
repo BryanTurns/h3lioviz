@@ -211,7 +211,7 @@ export const FEATURES = [
 ];
 
 export const LAYER_FORM_DEFAULT_VALUES: ILayers = {
-    colorBar: false,
+    colorBar: true,
     latSlice: true,
     lonSlice: true,
     lonSliceType: 'ecliptic',

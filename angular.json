@@ -95,6 +95,14 @@
                 }
               ]
             },
+             "local": {
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.local.ts"
+                }
+              ]
+            },
             "swpc": {
               "fileReplacements": [
                 {
@@ -119,6 +127,9 @@
             },
             "swpc": {
               "buildTarget": "h3lioviz:build:swpc"
+            },
+            "local": {
+                "buildTarget": "h3lioviz:build:local"
             }
           }
         },

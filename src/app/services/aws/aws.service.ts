@@ -59,8 +59,11 @@ export class AwsService {
     }
 
     startEc2(): Observable<string> {
-        // StartEC2Instances.py lambda link
-        return this._http.get( this.awsUrl + '/ec2start', { responseType: 'text' });
+        // StartEC2Instances.py lambda link.
+        // No leading slash: awsUrl already ends with "/", so '/ec2start' gave a
+        // double-slash path. API Gateway normalized that; the ALB path routing
+        // that replaced it may not.
+        return this._http.get( this.awsUrl + 'ec2start', { responseType: 'text' });
     }
 
     startUp() {
@@ -69,6 +72,15 @@ export class AwsService {
         this.monitoringInterval?.unsubscribe();
         // for prod use monitor function, when using a local server, fake a connection
         if ( environment.production) {
+            // Start the instance immediately rather than from monitorPvServer()'s
+            // subscriber, which only fires once a readiness poll completes. Those
+            // polls abort each other (interval(1000) + switchMap) while a poll
+            // against a stopped box takes ~3s, so the start was waiting on a race:
+            // observed at +3.2s and +43.1s from page load. Starting is safe to do
+            // blind: the lambda is a no-op if the box is already running.
+            // Not stored in startEc2Subscription: monitorPvServer unsubscribes that
+            // field before re-issuing, which would cancel this request in flight.
+            this.startEc2().subscribe();
             this.monitorPvServer();
         } else {
             this.pvServerStarted$.next(true);

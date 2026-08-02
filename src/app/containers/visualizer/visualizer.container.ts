@@ -39,7 +39,10 @@ export class VisualizerComponent implements AfterViewInit, OnInit, OnDestroy {
     dialog = inject(MatDialog);
     private _activatedRoute = inject(ActivatedRoute);
     private _awsService = inject(AwsService);
-    private _catalogService = inject(CatalogService);
+    // Injected in the constructor, not here: constructing CatalogService is what
+    // issues availableRuns, and field initializers run before the constructor
+    // body, which would put that request ahead of the EC2 start command.
+    private _catalogService: CatalogService;
     private _changeDetector = inject(ChangeDetectorRef);
     private _laspNavService = inject(LaspNavService);
     private _scripts = inject(LaspBaseAppSnippetsService);
@@ -95,7 +98,11 @@ export class VisualizerComponent implements AfterViewInit, OnInit, OnDestroy {
 
     constructor() {
         this._laspNavService.setAlwaysSticky(true);
+        // First network call: the EC2 start command. The instance dominates a
+        // cold start, so anything issued ahead of it is pure added latency.
         this._awsService.startUp();
+        // Then CatalogService, whose constructor issues availableRuns.
+        this._catalogService = inject(CatalogService);
 
         const queryParamMap = this._activatedRoute.snapshot.queryParamMap;
         // see if there is a site config, if so, use it

@@ -132,6 +132,14 @@ export class TimePlayerComponent implements AfterViewInit, OnChanges, OnDestroy 
                             this.timeIndex = timeIndex;
                             this.playNextTimestep();
                         } else {
+                            // Images are pushed for camera motion too, so an unchanged
+                            // index means nothing about time happened. Without this the
+                            // chain below emits into setTimestep(), which re-sets the
+                            // same index, forcing another render and another push. That
+                            // is a self-sustaining loop for the whole of every camera drag.
+                            if ( timeIndex === this.timeIndex ) {
+                                return;
+                            }
                             // if not playing, stop and get most recent time index to emit
                             this.session.call('pv.time.stop', []).then( () => {
                                 this.session.call('pv.time.index.get', []).then( (currentIndex) => {
@@ -151,6 +159,10 @@ export class TimePlayerComponent implements AfterViewInit, OnChanges, OnDestroy 
     ngAfterViewInit(): void {
         this.screenWidth = window.innerWidth;
         this.crosshairPositionPercent = this.timeIndex * 100 / ( this.timeTicks.length - 1 );
+        // Seed the crosshair label alongside its position: nothing else sets
+        // hoveredTime until the user hovers, and the label renders it
+        // unconditionally, so undefined shows "Invalid date" on initial load.
+        this.hoveredTime = this.timeTicks[this.timeIndex];
         this.timeScale = d3.scaleLinear()
             .domain([ 0, 1 ])
             .range([ this.timeTicks[0], this.timeTicks[this.timeTicks.length - 1] ]);

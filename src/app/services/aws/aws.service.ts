@@ -1,7 +1,7 @@
 import { HttpClient, HttpResponse } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { BehaviorSubject, interval, Observable, of, Subscription } from 'rxjs';
-import { catchError, startWith, switchMap, takeWhile, throttleTime } from 'rxjs/operators';
+import { BehaviorSubject, interval, Observable, of, Subject, Subscription } from 'rxjs';
+import { catchError, exhaustMap, startWith, switchMap, takeWhile, throttleTime } from 'rxjs/operators';
 import { environment, environmentConfig } from 'src/environments/environment';
 
 @Injectable({
@@ -12,10 +12,22 @@ export class AwsService {
 
     awsUrl: string = environment.aws.api;
     pvServerStarted$: BehaviorSubject<boolean> = new BehaviorSubject(false);
-    startEc2Subscription: Subscription;
     monitoringInterval: Subscription;
 
+    // Every request to start the instance goes through here. exhaustMap ignores
+    // new emissions while one request is still in flight, so there is never more
+    // than one concurrent /ec2start and none is ever cancelled part way through.
+    // That replaces the old startEc2Subscription field, which had to serve as both
+    // "the retry in flight" and a cleanup handle, and cancelled the initial request.
+    private _startEc2Requests: Subject<void> = new Subject<void>();
+
     constructor() {
+        // One subscription for the life of the service. catchError keeps a failed
+        // request from completing the stream and silencing every later retry.
+        this._startEc2Requests.pipe(
+            exhaustMap( () => this.startEc2().pipe( catchError( () => of(null) ) ) )
+        ).subscribe();
+
         // start up the service immediately on visualizer load
         // this should be the first network call
         this.startUp();
@@ -40,11 +52,9 @@ export class AwsService {
                 // (depending on the backend version deployed)
                 // a network error of 503 for stopping, 502 for starting, but those are passed through as errror='unknown' and status=0
                 if ( pvStatus.status === 500 || pvStatus.status === 400 ) {
-                    // good to connect!
+                    // good to connect! Any /ec2start still in flight is left to
+                    // finish; the lambda is a no-op once the instance is running.
                     this.pvServerStarted$.next(true);
-                    if ( this.startEc2Subscription ) {
-                        this.startEc2Subscription.unsubscribe();
-                    }
                     return of( false );
                 } else {
                     // carry on
@@ -54,12 +64,10 @@ export class AwsService {
             })
         ).pipe( throttleTime( 1000 * 20 ) ).subscribe( pvNotReady => {
             if ( pvNotReady === true ) {
-                // remove existing subscriptions
-                if ( this.startEc2Subscription ) {
-                    this.startEc2Subscription.unsubscribe();
-                }
-                // send the start command every throttled interval until PV server returns a 500 status
-                this.startEc2Subscription = this.startEc2().subscribe();
+                // ask for a start every throttled interval until the PV server answers.
+                // If one is already in flight this emission is dropped rather than
+                // stacking up a second request.
+                this._startEc2Requests.next();
             }
         });
     }
@@ -75,8 +83,8 @@ export class AwsService {
         this.monitoringInterval?.unsubscribe();
         // for prod use monitor function, when using a local server, fake a connection
         if ( environment.production) {
-            // Start the instance immediately
-            this.startEc2Subscription = this.startEc2().subscribe();
+            // Start the instance immediately, before any polling.
+            this._startEc2Requests.next();
             this.monitorPvServer();
         } else {
             this.pvServerStarted$.next(true);

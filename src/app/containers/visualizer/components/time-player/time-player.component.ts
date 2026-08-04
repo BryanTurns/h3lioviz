@@ -132,11 +132,8 @@ export class TimePlayerComponent implements AfterViewInit, OnChanges, OnDestroy 
                             this.timeIndex = timeIndex;
                             this.playNextTimestep();
                         } else {
-                            // Images are pushed for camera motion too, so an unchanged
-                            // index means nothing about time happened. Without this the
-                            // chain below emits into setTimestep(), which re-sets the
-                            // same index, forcing another render and another push. That
-                            // is a self-sustaining loop for the whole of every camera drag.
+                            // Images are pushed for camera motion too, so ignore an unchanged index
+                            // since nothing about time happened.
                             if ( timeIndex === this.timeIndex ) {
                                 return;
                             }

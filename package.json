@@ -16,6 +16,7 @@
     "build:dev": "ng build --configuration production,dev --base-href=/h3lioviz/",
     "build:swpc": "ng build --configuration production,swpc --base-href=/h3lioviz/",
     "build:local": "ng build --configuration production,local --base-href=/h3lioviz/",
+    "build:bryan": "ng build --configuration production,bryan --base-href=/h3lioviz/",
     "deploy": "npm run build:pages && cp docs/index.html docs/404.html && gh-pages -d docs",
     "test": "ng test",
     "lint": "ng lint",

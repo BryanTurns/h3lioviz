@@ -193,6 +193,7 @@ export interface ILayers {
     radialSlice: boolean;
     satellites: boolean;
     satFieldlines: boolean;
+    innerPlanets: boolean;
 }
 
 export const SLICES = [
@@ -207,7 +208,8 @@ export const FEATURES = [
     'lonStreamlines',
     'satellites',
     'satFieldlines',
-    'colorBar'
+    'colorBar',
+    'innerPlanets'
 ];
 
 export const LAYER_FORM_DEFAULT_VALUES: ILayers = {
@@ -218,5 +220,6 @@ export const LAYER_FORM_DEFAULT_VALUES: ILayers = {
     lonStreamlines: false,
     radialSlice: false,
     satellites: false,
-    satFieldlines: false
+    satFieldlines: false,
+    innerPlanets: false
 };

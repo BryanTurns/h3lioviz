@@ -1,4 +1,9 @@
 ### Changed
+- Performance improvements
+
+## 2026-02-05 v2.3.3
+
+### Changed
 - Colorbar legend defaults to on
 
 ## 2026-02-05 v2.3.3

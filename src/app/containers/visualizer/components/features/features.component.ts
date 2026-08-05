@@ -97,6 +97,9 @@ export class FeaturesComponent implements OnChanges, OnDestroy, OnInit {
             if ( controlName === 'satellites' ) {
                 const state = controlStates[ controlName ] === true ? 'on' : 'off';
                 this.session.call( 'pv.h3lioviz.toggle_satellites', [ state ] );
+            } else if ( controlName === 'innerPlanets' ) {
+                const state = controlStates[ controlName ] === true ? 'on' : 'off';
+                this.session.call( 'pv.h3lioviz.toggle_inner_planets', [ state ] );
             } else if (typeof controlStates[ controlName ] === 'boolean') {
                 const name = snakeCase( controlName );
                 const state = controlStates[ controlName ] === true ? 'on' : 'off';

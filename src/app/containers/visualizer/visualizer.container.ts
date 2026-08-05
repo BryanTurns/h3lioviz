@@ -14,7 +14,6 @@ import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { IPlotParams } from 'scicharts';
 import { ConfigLabels, DEFAULT_SITE_CONFIG, ICmeMetadata, IModelMetadata, ISiteConfig } from 'src/app/models';
 import {
-    AwsService,
     CatalogService,
     SiteConfigService,
     WebsocketService
@@ -38,7 +37,6 @@ const vizAccessoriesHeight = 112 + 45;
 export class VisualizerComponent implements AfterViewInit, OnInit, OnDestroy {
     dialog = inject(MatDialog);
     private _activatedRoute = inject(ActivatedRoute);
-    private _awsService = inject(AwsService);
     private _catalogService = inject(CatalogService);
     private _changeDetector = inject(ChangeDetectorRef);
     private _laspNavService = inject(LaspNavService);
@@ -79,7 +77,11 @@ export class VisualizerComponent implements AfterViewInit, OnInit, OnDestroy {
     // dimensions are [ width, height ] for paraview resize, drag direction is variable so assign appropriately
     vizDimensions: [ number, number ] = [ undefined, undefined ];
     vizPanelSize: number;
-    waitingMessages: string[] = [ 'this can take a minute…', 'checking status…', 'looking for updates…' ];
+    waitingMessages: string[] = [
+        'the server is starting…',
+        'this can take up to 60 seconds…',
+        'once started, server remains active while in use'
+    ];
     waitingMessage: string = this.waitingMessages[0];
     windowResize$: Subject<void> = new Subject();
     // dimensions are [ width, height ]
@@ -95,7 +97,21 @@ export class VisualizerComponent implements AfterViewInit, OnInit, OnDestroy {
 
     constructor() {
         this._laspNavService.setAlwaysSticky(true);
-        this._awsService.startUp();
+
+        // get catalog on visualizer load
+        this._catalogService.getCatalog().subscribe( catalog => {
+            // sort catalog by `creation`, then sort by `run_id`to ensure consistent ordering
+            catalog.sort( ( a, b ) =>
+                moment(b['creation']).valueOf() - moment(a['creation']).valueOf() || b['run_id'] - (a['run_id'])
+            );
+            const formattedCatalog = this._catalogService.formatCatalog(catalog);
+            this._catalogService.catalog$.next(formattedCatalog);
+            this._catalogService.runTitles = Array.from(this._catalogService.catalog$.value).reduce( (aggregator, run) => {
+                const time = moment.utc( run['creation'] ).format('YYYY-MM-DDTHH');
+                aggregator[ run['run_id'] ] = `${time} (${run.institute} #${run.run_id})`;
+                return aggregator;
+            }, {});
+        });
 
         const queryParamMap = this._activatedRoute.snapshot.queryParamMap;
         // see if there is a site config, if so, use it
@@ -182,7 +198,9 @@ export class VisualizerComponent implements AfterViewInit, OnInit, OnDestroy {
         );
 
         const waitingMessageInterval = setInterval(() =>
-            this.waitingMessage = this.waitingMessages[ Math.floor( Math.random() * ( this.waitingMessages.length ) ) ], 6000);
+            this.waitingMessage = this.waitingMessages[
+                ( this.waitingMessages.indexOf( this.waitingMessage ) + 1 ) % this.waitingMessages.length
+            ], 6000);
 
         // show a waiting message until the pvServer has started
         this.subscriptions.push(

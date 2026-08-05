@@ -1,6 +1,5 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import moment from 'moment';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { ICmeMetadata, IModelMetadata } from 'src/app/models';
 import { environment, localUrls } from 'src/environments/environment';
@@ -14,24 +13,7 @@ export class CatalogService {
     catalog$: BehaviorSubject<IModelMetadata[]> = new BehaviorSubject(undefined);
     runTitles: {};
 
-    constructor() {
-        // get catalog on app load
-        this.getCatalog().subscribe( catalog => {
-            // sort catalog by `creation`, then sort by `run_id`to ensure consistent ordering
-            catalog.sort( ( a, b ) =>
-                moment(b['creation']).valueOf() - moment(a['creation']).valueOf() || b['run_id'] - (a['run_id'])
-            );
-            const formattedCatalog = this._formatCatalog(catalog);
-            this.catalog$.next(formattedCatalog);
-            this.runTitles = Array.from(this.catalog$.value).reduce( (aggregator, run) => {
-                const time = moment.utc( run['creation'] ).format('YYYY-MM-DDTHH');
-                aggregator[ run['run_id'] ] = `${time} (${run.institute} #${run.run_id})`;
-                return aggregator;
-            }, {});
-        });
-    }
-
-    private _formatCatalog(catalog: IModelMetadata[]) {
+    formatCatalog(catalog: IModelMetadata[]) {
         catalog.map( (catalogEntry: IModelMetadata) => {
             catalogEntry.resolution = this._getResolution( catalogEntry.code );
             const hasConeMetadata = catalogEntry.cme_time;

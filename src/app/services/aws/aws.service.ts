@@ -1,8 +1,11 @@
 import { HttpClient, HttpResponse } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { BehaviorSubject, interval, Observable, of, Subject, Subscription } from 'rxjs';
-import { catchError, exhaustMap, startWith, switchMap, takeWhile, throttleTime } from 'rxjs/operators';
+import { catchError, exhaustMap, map, startWith, switchMap, takeWhile } from 'rxjs/operators';
 import { environment, environmentConfig } from 'src/environments/environment';
+
+// 500 means Apache is up but the launcher cannot spawn a session yet, so it is not ready.
+const LAUNCHER_READY_STATUS = 400;
 
 @Injectable({
     providedIn: 'root'
@@ -33,9 +36,19 @@ export class AwsService {
         this.startUp();
     }
 
-    getParaviewServerStatus(): Observable<HttpResponse<string>> {
+    getEc2Status(): Observable<string> {
+        return this._http.get( this.awsUrl + 'ec2status', { responseType: 'text' });
+    }
+
+    getParaviewServerStatus(): Observable<number> {
         // add a random query parameter to the request, the easiest way to keep the request from being cached in the browser
-        return this._http.get( environmentConfig.sessionManagerURL + '?' + Math.random(), { responseType: 'text', observe: 'response' } );
+        return this._http.get(
+            environmentConfig.sessionManagerURL + '?' + Math.random(),
+            { responseType: 'text', observe: 'response' }
+        ).pipe(
+            map( ( response: HttpResponse<string> ) => response.status ),
+            catchError( error => of( error?.status ?? 0 ) )
+        );
     }
 
     monitorPvServer() {
@@ -43,31 +56,27 @@ export class AwsService {
         .pipe(
             takeWhile( () => this.pvServerStarted$.value === false ),
             startWith(0),
-            // pass through fails—looking specifically for a 500
-            switchMap(() => this.getParaviewServerStatus().pipe(
-                catchError( (error) => of(error) )
-            )),
-            switchMap( (pvStatus: {status: number}) => {
-                // status is 0 when server is not ready, 400 or 500 when it is ready
-                // (depending on the backend version deployed)
-                // a network error of 503 for stopping, 502 for starting, but those are passed through as errror='unknown' and status=0
-                if ( pvStatus.status === 500 || pvStatus.status === 400 ) {
-                    // good to connect! Any /ec2start still in flight is left to
-                    // finish; the lambda is a no-op once the instance is running.
-                    this.pvServerStarted$.next(true);
-                    return of( false );
-                } else {
-                    // carry on
-                    this.pvServerStarted$.next(false);
-                    return of( true );
-                }
-            })
-        ).pipe( throttleTime( 1000 * 20 ) ).subscribe( pvNotReady => {
-            if ( pvNotReady === true ) {
-                // ask for a start every throttled interval until the PV server answers.
-                // If one is already in flight this emission is dropped rather than
-                // stacking up a second request.
-                this._startEc2Requests.next();
+            // exhaustMap wraps the whole sequence: a new poll must not cancel an
+            // in-flight launcher probe, which is the slow call during a cold boot.
+            exhaustMap( () => this.getEc2Status().pipe(
+                catchError( () => of('') ),
+                switchMap( ( state: string ) => {
+                    if ( state.includes('stopped') ) {
+                        this._startEc2Requests.next();
+                    }
+                    // A stopping EC2 still answers the launcher, so asking it first
+                    // would connect to a paraview container about to die.
+                    if ( !state.includes('running') ) {
+                        return of( false );
+                    }
+                    return this.getParaviewServerStatus().pipe(
+                        map( status => status === LAUNCHER_READY_STATUS )
+                    );
+                })
+            ))
+        ).subscribe( ready => {
+            if ( ready === true ) {
+                this.pvServerStarted$.next(true);
             }
         });
     }

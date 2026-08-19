@@ -93,7 +93,6 @@ export class FeaturesComponent implements OnChanges, OnDestroy, OnInit {
     }
 
     updateVisibilityControls(controlStates: { [parameter: string]: any }) {
-        console.log(controlStates)
         Object.keys( controlStates ).forEach( controlName => {
             if ( controlName === 'satellites' ) {
                 const state = controlStates[ controlName ] === true ? 'on' : 'off';

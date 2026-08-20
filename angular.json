@@ -103,6 +103,14 @@
                 }
               ]
             },
+            "bryan": {
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.bryan.ts"
+                }
+              ]
+            },
             "swpc": {
               "fileReplacements": [
                 {
@@ -130,6 +138,9 @@
             },
             "local": {
                 "buildTarget": "h3lioviz:build:local"
+            },
+            "bryan": {
+                "buildTarget": "h3lioviz:build:bryan"
             }
           }
         },

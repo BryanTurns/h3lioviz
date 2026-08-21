@@ -221,5 +221,5 @@ export const LAYER_FORM_DEFAULT_VALUES: ILayers = {
     radialSlice: false,
     satellites: false,
     satFieldlines: false,
-    innerPlanets: false
+    innerPlanets: true,
 };

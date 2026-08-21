@@ -5,7 +5,7 @@ import { catchError, exhaustMap, map, startWith, switchMap, takeWhile } from 'rx
 import { environment, environmentConfig } from 'src/environments/environment';
 
 // 500 means Apache is up but the launcher cannot spawn a session yet, so it is not ready.
-const LAUNCHER_READY_STATUS = 400;
+const LAUNCHER_READY_STATUS = 200;
 
 @Injectable({
     providedIn: 'root'
